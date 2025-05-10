@@ -5,8 +5,9 @@ import concert.ConcertServiceOuterClass.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import distributed.NameServiceClient;
-import distributed.ServiceDetails;
+import distributed.NameServiceClient.ServiceDetails;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -27,7 +28,7 @@ public class ConcertClient {
     private void connectToServer() throws IOException {
         try {
             ServiceDetails serviceDetails = nameServiceClient.findService(SERVICE_NAME);
-            channel = ManagedChannelBuilder.forAddress(serviceDetails.getIp(), serviceDetails.getPort())
+            channel = ManagedChannelBuilder.forAddress(serviceDetails.getIPAddress(), serviceDetails.getPort())
                     .usePlaintext()
                     .build();
             stub = ConcertServiceGrpc.newBlockingStub(channel);

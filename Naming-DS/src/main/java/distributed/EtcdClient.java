@@ -12,7 +12,12 @@ public class EtcdClient {
     private String etcdAddress;
 
     public EtcdClient(String etcdAddress) throws IOException {
-        this.etcdAddress = etcdAddress;
+        // Ensure the address has http:// protocol
+        if (!etcdAddress.startsWith("http://") && !etcdAddress.startsWith("https://")) {
+            this.etcdAddress = "http://" + etcdAddress;
+        } else {
+            this.etcdAddress = etcdAddress;
+        }
     }
 
     public void put(String key, String value) throws IOException {

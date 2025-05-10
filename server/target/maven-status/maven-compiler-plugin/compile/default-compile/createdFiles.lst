@@ -1,1 +1,10 @@
 concert/ConcertServiceOuterClass$1.class
+concert/ConcertServiceGrpc$3.class
+concert/ConcertServiceGrpc$ConcertServiceFutureStub.class
+concert/ConcertServiceGrpc$ConcertServiceBlockingStub.class
+concert/ConcertServiceGrpc$ConcertServiceMethodDescriptorSupplier.class
+concert/ConcertServiceGrpc$ConcertServiceImplBase.class
+concert/ConcertServiceGrpc$ConcertServiceFileDescriptorSupplier.class
+concert/ConcertServiceGrpc$ConcertServiceStub.class
+concert/ConcertServiceGrpc$2.class
+concert/ConcertServiceGrpc$MethodHandlers.class
