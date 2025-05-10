@@ -4,7 +4,6 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import java.io.IOException;
 import distributed.NameServiceClient;
-import distributed.ServiceDetails;
 
 public class ConcertServer {
     private static final String SERVICE_NAME = "concert-service";
@@ -27,7 +26,7 @@ public class ConcertServer {
         
         // Start the server
         Server server = ServerBuilder.forPort(port)
-                .addService(new ConcertServiceImpl(dataDir))
+                .addService(new ConcertServiceImpl(nameServiceAddress, dataDir))
                 .build();
         
         System.out.println("ConcertServer started, listening on port " + port);
