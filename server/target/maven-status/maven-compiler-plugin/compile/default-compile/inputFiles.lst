@@ -1,8 +1,10 @@
 /Users/Projects/distributed-systems/server/src/main/java/ds/tutorials/communication/server/BankServer.java
 /Users/Projects/distributed-systems/server/src/main/java/ds/tutorials/communication/server/CheckBalanceServiceImpl.java
 /Users/Projects/distributed-systems/server/src/main/java/ds/tutorials/communication/server/SetBalanceServiceImpl.java
+/Users/Projects/distributed-systems/server/target/generated-sources/protobuf/grpc-java/concert/ConcertServiceGrpc.java
 /Users/Projects/distributed-systems/server/target/generated-sources/protobuf/grpc-java/ds/tutorial/communication/grpc/generated/CheckBalanceServiceGrpc.java
 /Users/Projects/distributed-systems/server/target/generated-sources/protobuf/grpc-java/ds/tutorial/communication/grpc/generated/SetBalanceServiceGrpc.java
+/Users/Projects/distributed-systems/server/target/generated-sources/protobuf/java/concert/ConcertServiceOuterClass.java
 /Users/Projects/distributed-systems/server/target/generated-sources/protobuf/java/ds/tutorial/communication/grpc/generated/BankService.java
 /Users/Projects/distributed-systems/server/target/generated-sources/protobuf/java/ds/tutorial/communication/grpc/generated/CheckBalanceRequest.java
 /Users/Projects/distributed-systems/server/target/generated-sources/protobuf/java/ds/tutorial/communication/grpc/generated/CheckBalanceRequestOrBuilder.java
