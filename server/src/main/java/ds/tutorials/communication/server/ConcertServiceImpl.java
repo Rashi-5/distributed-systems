@@ -4,8 +4,8 @@ import concert.ConcertServiceGrpc;
 import concert.ConcertServiceOuterClass.*;
 import io.grpc.stub.StreamObserver;
 import ds.tutorials.synchronization.DistributedTxCoordinator;
-import ds.tutorials.synchronization.DistributedTxParticipant;
 import ds.tutorials.synchronization.DistributedTxListener;
+import ds.tutorials.synchronization.DistributedLock;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,11 +21,20 @@ public class ConcertServiceImpl extends ConcertServiceGrpc.ConcertServiceImplBas
     private final DistributedTxCoordinator coordinator;
     private final String nodeId;
     private final String dataDir;
+    private final String nameServiceAddress;
+    private final DistributedLock distributedLock;
 
-    public ConcertServiceImpl(String dataDir) {
+    public ConcertServiceImpl(String nameServiceAddress, String dataDir) {
         this.nodeId = UUID.randomUUID().toString();
         this.coordinator = new DistributedTxCoordinator(this);
         this.dataDir = dataDir;
+        this.nameServiceAddress = nameServiceAddress;
+        try {
+            DistributedLock.setZooKeeperURL("127.0.0.1:2181");
+            this.distributedLock = new DistributedLock("concert-lock");
+        } catch (IOException | KeeperException | InterruptedException e) {
+            throw new RuntimeException("Failed to initialize distributed lock", e);
+        }
         loadData();
     }
 
