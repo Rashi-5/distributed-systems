@@ -42,7 +42,7 @@
             <version>1.3.2</version>
         </dependency>
         <dependency>
-            <groupId>ds.tutorials</groupId>
+            <groupId>distributed</groupId>
             <artifactId>Naming-DS</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
