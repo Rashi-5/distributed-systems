@@ -3,27 +3,108 @@ package ds.tutorials.communication.server;
 import concert.ConcertServiceGrpc;
 import concert.ConcertServiceOuterClass.*;
 import io.grpc.stub.StreamObserver;
+import ds.tutorials.synchronization.DistributedTxCoordinator;
+import ds.tutorials.synchronization.DistributedTxParticipant;
+import ds.tutorials.synchronization.DistributedTxListener;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import ds.tutorials.synchronization.DistributedLock;
 import org.apache.zookeeper.KeeperException;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
+import java.nio.file.*;
 
-public class ConcertServiceImpl extends ConcertServiceGrpc.ConcertServiceImplBase {
+public class ConcertServiceImpl extends ConcertServiceGrpc.ConcertServiceImplBase implements DistributedTxListener {
     // In-memory data store for concerts and reservations
     private final Map<String, Concert.Builder> concerts = new ConcurrentHashMap<>();
     private final Map<String, ReservationResponse> reservations = new ConcurrentHashMap<>();
-    private DistributedLock distributedLock;
+    private final DistributedTxCoordinator coordinator;
+    private final String nodeId;
+    private final String dataDir;
 
-    public ConcertServiceImpl() {
+    public ConcertServiceImpl(String dataDir) {
+        this.nodeId = UUID.randomUUID().toString();
+        this.coordinator = new DistributedTxCoordinator(this);
+        this.dataDir = dataDir;
+        loadData();
+    }
+
+    private void loadData() {
         try {
-            DistributedLock.setZooKeeperURL("127.0.0.1:2181");
-            this.distributedLock = new DistributedLock("concert-lock");
-        } catch (IOException | KeeperException | InterruptedException e) {
-            throw new RuntimeException("Failed to initialize distributed lock", e);
+            Files.createDirectories(Paths.get(dataDir));
+            loadConcerts();
+            loadReservations();
+        } catch (IOException e) {
+            System.err.println("Failed to load data: " + e.getMessage());
+        }
+    }
+
+    private void loadConcerts() throws IOException {
+        File concertsFile = new File(dataDir, "concerts.dat");
+        if (concertsFile.exists()) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(concertsFile))) {
+                @SuppressWarnings("unchecked")
+                Map<String, Concert.Builder> loadedConcerts = (Map<String, Concert.Builder>) ois.readObject();
+                concerts.putAll(loadedConcerts);
+            } catch (ClassNotFoundException e) {
+                System.err.println("Failed to load concerts: " + e.getMessage());
+            }
+        }
+    }
+
+    private void loadReservations() throws IOException {
+        File reservationsFile = new File(dataDir, "reservations.dat");
+        if (reservationsFile.exists()) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(reservationsFile))) {
+                @SuppressWarnings("unchecked")
+                Map<String, ReservationResponse> loadedReservations = (Map<String, ReservationResponse>) ois.readObject();
+                reservations.putAll(loadedReservations);
+            } catch (ClassNotFoundException e) {
+                System.err.println("Failed to load reservations: " + e.getMessage());
+            }
+        }
+    }
+
+    private void saveData() {
+        try {
+            saveConcerts();
+            saveReservations();
+        } catch (IOException e) {
+            System.err.println("Failed to save data: " + e.getMessage());
+        }
+    }
+
+    private void saveConcerts() throws IOException {
+        File concertsFile = new File(dataDir, "concerts.dat");
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(concertsFile))) {
+            oos.writeObject(new HashMap<>(concerts));
+        }
+    }
+
+    private void saveReservations() throws IOException {
+        File reservationsFile = new File(dataDir, "reservations.dat");
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(reservationsFile))) {
+            oos.writeObject(new HashMap<>(reservations));
+        }
+    }
+
+    @Override
+    public void onGlobalCommit() {
+        saveData();
+    }
+
+    @Override
+    public void onGlobalAbort() {
+        // No need to save data on abort
+    }
+
+    private boolean performAtomicOperation(String operationId, Runnable operation) {
+        try {
+            coordinator.start(operationId, nodeId);
+            operation.run();
+            return coordinator.perform();
+        } catch (Exception e) {
+            return false;
         }
     }
 
@@ -161,71 +242,54 @@ public class ConcertServiceImpl extends ConcertServiceGrpc.ConcertServiceImplBas
 
     @Override
     public void reserveTickets(ReserveTicketsRequest request, StreamObserver<ReservationResponse> responseObserver) {
-        try {
-            distributedLock.acquireLock();
-            try {
-                String concertId = request.getConcertId();
-                Concert.Builder concert = concerts.get(concertId);
-                if (concert == null) {
-                    ReservationResponse response = ReservationResponse.newBuilder()
-                            .setSuccess(false)
-                            .setMessage("Concert not found.")
-                            .build();
-                    responseObserver.onNext(response);
-                    responseObserver.onCompleted();
-                    return;
-                }
-                // Atomicity: check and update seat and after-party in one step
-                synchronized (concert) {
-                    int availableSeats = concert.getSeatTiersMap().getOrDefault(request.getTier(), 0);
-                    int availableAfterParty = concert.getAfterPartyTickets();
-                    if (request.getCount() > availableSeats) {
-                        ReservationResponse response = ReservationResponse.newBuilder()
-                                .setSuccess(false)
-                                .setMessage("Not enough seats available.")
-                                .build();
-                        responseObserver.onNext(response);
-                        responseObserver.onCompleted();
-                        return;
-                    }
-                    if (request.getAfterParty() && request.getCount() > availableAfterParty) {
-                        ReservationResponse response = ReservationResponse.newBuilder()
-                                .setSuccess(false)
-                                .setMessage("Not enough after-party tickets available.")
-                                .build();
-                        responseObserver.onNext(response);
-                        responseObserver.onCompleted();
-                        return;
-                    }
-                    // All-or-nothing: only reserve if both are available
-                    Map<String, Integer> seatTiers = new HashMap<>(concert.getSeatTiersMap());
-                    seatTiers.put(request.getTier(), availableSeats - request.getCount());
-                    concert.putAllSeatTiers(seatTiers);
-                    if (request.getAfterParty()) {
-                        concert.setAfterPartyTickets(availableAfterParty - request.getCount());
-                    }
-                    concerts.put(concertId, concert);
-                    String reservationId = UUID.randomUUID().toString();
-                    ReservationResponse response = ReservationResponse.newBuilder()
-                            .setSuccess(true)
-                            .setMessage("Reservation successful.")
-                            .setReservationId(reservationId)
-                            .build();
-                    reservations.put(reservationId, response);
-                    responseObserver.onNext(response);
-                    responseObserver.onCompleted();
-                }
-            } finally {
-                distributedLock.releaseLock();
+        String operationId = "reserve_" + UUID.randomUUID().toString();
+        boolean success = performAtomicOperation(operationId, () -> {
+            String concertId = request.getConcertId();
+            Concert.Builder concert = concerts.get(concertId);
+            if (concert == null) {
+                throw new RuntimeException("Concert not found");
             }
-        } catch (Exception e) {
-            ReservationResponse response = ReservationResponse.newBuilder()
+            
+            synchronized (concert) {
+                int availableSeats = concert.getSeatTiersMap().getOrDefault(request.getTier(), 0);
+                int availableAfterParty = concert.getAfterPartyTickets();
+                
+                if (request.getCount() > availableSeats) {
+                    throw new RuntimeException("Not enough seats available");
+                }
+                
+                if (request.getAfterParty() && request.getCount() > availableAfterParty) {
+                    throw new RuntimeException("Not enough after-party tickets available");
+                }
+                
+                Map<String, Integer> seatTiers = new HashMap<>(concert.getSeatTiersMap());
+                seatTiers.put(request.getTier(), availableSeats - request.getCount());
+                concert.putAllSeatTiers(seatTiers);
+                
+                if (request.getAfterParty()) {
+                    concert.setAfterPartyTickets(availableAfterParty - request.getCount());
+                }
+                
+                concerts.put(concertId, concert);
+                String reservationId = UUID.randomUUID().toString();
+                ReservationResponse response = ReservationResponse.newBuilder()
+                        .setSuccess(true)
+                        .setMessage("Reservation successful")
+                        .setReservationId(reservationId)
+                        .build();
+                reservations.put(reservationId, response);
+            }
+        });
+        
+        if (success) {
+            responseObserver.onNext(reservations.get(operationId));
+        } else {
+            responseObserver.onNext(ReservationResponse.newBuilder()
                     .setSuccess(false)
-                    .setMessage("Distributed lock error: " + e.getMessage())
-                    .build();
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
+                    .setMessage("Failed to reserve tickets")
+                    .build());
         }
+        responseObserver.onCompleted();
     }
 
     @Override
