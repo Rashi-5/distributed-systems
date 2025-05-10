@@ -1,16 +1,1 @@
-concert/ConcertServiceGrpc$ConcertServiceBaseDescriptorSupplier.class
-concert/ConcertServiceGrpc$1.class
-concert/ConcertServiceGrpc.class
-concert/ConcertServiceGrpc$AsyncService.class
 concert/ConcertServiceOuterClass$1.class
-concert/ConcertServiceGrpc$3.class
-concert/ConcertServiceGrpc$ConcertServiceFutureStub.class
-concert/ConcertServiceGrpc$ConcertServiceBlockingStub.class
-ds/tutorials/communication/server/ConcertServiceImpl.class
-concert/ConcertServiceGrpc$ConcertServiceMethodDescriptorSupplier.class
-concert/ConcertServiceGrpc$ConcertServiceImplBase.class
-concert/ConcertServiceGrpc$ConcertServiceFileDescriptorSupplier.class
-ds/tutorials/communication/server/ConcertServer.class
-concert/ConcertServiceGrpc$ConcertServiceStub.class
-concert/ConcertServiceGrpc$2.class
-concert/ConcertServiceGrpc$MethodHandlers.class
