@@ -1,4 +1,4 @@
-package ds.tutorials.sycnhronization;
+package ds.tutorials.synchronization;
 
 public interface DistributedTxListener {
     void onGlobalCommit();

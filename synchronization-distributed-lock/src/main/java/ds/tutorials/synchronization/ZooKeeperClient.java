@@ -1,4 +1,4 @@
-package ds.tutorials.sycnhronization;
+package ds.tutorials.synchronization;
 
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;

@@ -1,4 +1,4 @@
-package ds.tutorials.sycnhronization;
+package ds.tutorials.synchronization;
 
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
