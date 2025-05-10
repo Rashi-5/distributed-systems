@@ -36,8 +36,8 @@
         </dependency>
         <dependency>
             <groupId>ds.tutorials</groupId>
-            <artifactId>synchronization-distiruted-lock</artifactId>
-            <version>2.0-SNAPSHOT</version>
+            <artifactId>synchronization-distributed-lock</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>javax.annotation</groupId>
@@ -49,7 +49,11 @@
             <artifactId>protobuf-java</artifactId>
             <version>3.24.3</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <version>3.9.1</version>
+        </dependency>
     </dependencies>
 
     <build>
