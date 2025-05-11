@@ -1,6 +1,7 @@
 package ds.tutorials.communication.client;
 
-import concert.ConcertServiceGrpc;
+import concert.ConcertQueryServiceGrpc;
+import concert.ConcertCommandServiceGrpc;
 import concert.ConcertServiceOuterClass.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -18,7 +19,8 @@ public class ConcertClient {
     
     private final NameServiceClient nameServiceClient;
     private ManagedChannel channel;
-    private ConcertServiceGrpc.ConcertServiceBlockingStub stub;
+    private ConcertQueryServiceGrpc.ConcertQueryServiceBlockingStub queryStub;
+    private ConcertCommandServiceGrpc.ConcertCommandServiceBlockingStub commandStub;
     
     public ConcertClient(String nameServiceAddress) throws IOException {
         this.nameServiceClient = new NameServiceClient(nameServiceAddress);
@@ -31,7 +33,8 @@ public class ConcertClient {
             channel = ManagedChannelBuilder.forAddress(serviceDetails.getIPAddress(), serviceDetails.getPort())
                     .usePlaintext()
                     .build();
-            stub = ConcertServiceGrpc.newBlockingStub(channel);
+            queryStub = ConcertQueryServiceGrpc.newBlockingStub(channel);
+            commandStub = ConcertCommandServiceGrpc.newBlockingStub(channel);
         } catch (InterruptedException e) {
             throw new IOException("Failed to connect to server", e);
         }
@@ -82,7 +85,7 @@ public class ConcertClient {
                 try {
                     switch (option) {
                         case "1":
-                            ListConcertsResponse response = client.stub.listConcerts(Empty.newBuilder().build());
+                            ListConcertsResponse response = client.queryStub.listConcerts(Empty.newBuilder().build());
                             System.out.println("Available Concerts:");
                             for (Concert concert : response.getConcertsList()) {
                                 System.out.println("- " + concert.getName() + " (ID: " + concert.getId() + ")");
@@ -104,7 +107,7 @@ public class ConcertClient {
                                     .setDate(date)
                                     .build();
                             AddConcertRequest req = AddConcertRequest.newBuilder().setConcert(concert).build();
-                            ConcertResponse resp = client.stub.addConcert(req);
+                            ConcertResponse resp = client.commandStub.addConcert(req);
                             System.out.println(resp.getMessage());
                             break;
                         case "3":
@@ -120,14 +123,14 @@ public class ConcertClient {
                                     .setDate(newDate)
                                     .build();
                             UpdateConcertRequest updateReq = UpdateConcertRequest.newBuilder().setConcert(updatedConcert).build();
-                            ConcertResponse updateResp = client.stub.updateConcert(updateReq);
+                            ConcertResponse updateResp = client.commandStub.updateConcert(updateReq);
                             System.out.println(updateResp.getMessage());
                             break;
                         case "4":
                             System.out.print("Concert ID to cancel: ");
                             String cancelId = scanner.nextLine();
                             CancelConcertRequest cancelReq = CancelConcertRequest.newBuilder().setConcertId(cancelId).build();
-                            ConcertResponse cancelResp = client.stub.cancelConcert(cancelReq);
+                            ConcertResponse cancelResp = client.commandStub.cancelConcert(cancelReq);
                             System.out.println(cancelResp.getMessage());
                             break;
                         case "5":
@@ -148,7 +151,7 @@ public class ConcertClient {
                                     .setAfterParty(afterParty)
                                     .setCustomerId(customerId)
                                     .build();
-                            ReservationResponse reserveResp = client.stub.reserveTickets(reserveReq);
+                            ReservationResponse reserveResp = client.commandStub.reserveTickets(reserveReq);
                             System.out.println(reserveResp.getMessage() + " Reservation ID: " + reserveResp.getReservationId());
                             break;
                         case "6":
@@ -166,13 +169,13 @@ public class ConcertClient {
                                     .setCount(seatsToAdd)
                                     .setAfterParty(false)
                                     .build();
-                            ConcertResponse stockResp = client.stub.addTicketStock(stockReq);
+                            ConcertResponse stockResp = client.commandStub.addTicketStock(stockReq);
                             UpdateTicketPriceRequest priceReq = UpdateTicketPriceRequest.newBuilder()
                                     .setConcertId(concertIdToUpdate)
                                     .setTier(tierToUpdate)
                                     .setPrice(price)
                                     .build();
-                            ConcertResponse priceResp = client.stub.updateTicketPrice(priceReq);
+                            ConcertResponse priceResp = client.commandStub.updateTicketPrice(priceReq);
                             System.out.println(stockResp.getMessage());
                             System.out.println(priceResp.getMessage());
                             break;
@@ -187,7 +190,7 @@ public class ConcertClient {
                                     .setCount(afterPartyTicketsToAdd)
                                     .setAfterParty(true)
                                     .build();
-                            ConcertResponse afterPartyResp = client.stub.addTicketStock(afterPartyReq);
+                            ConcertResponse afterPartyResp = client.commandStub.addTicketStock(afterPartyReq);
                             System.out.println(afterPartyResp.getMessage());
                             break;
                         case "8":
@@ -208,7 +211,7 @@ public class ConcertClient {
                                     .setAfterParty(afterPartyForBulk)
                                     .setGroupId(groupId)
                                     .build();
-                            ReservationResponse bulkResp = client.stub.bulkReserve(bulkReq);
+                            ReservationResponse bulkResp = client.commandStub.bulkReserve(bulkReq);
                             System.out.println(bulkResp.getMessage() + " Reservation ID: " + bulkResp.getReservationId());
                             break;
                         case "9":
