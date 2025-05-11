@@ -2,7 +2,11 @@ syntax = "proto3";
 
 package concert;
 
-service ConcertService {
+service ConcertQueryService {
+  rpc ListConcerts(Empty) returns (ListConcertsResponse);
+}
+
+service ConcertCommandService {
   // Organizer APIs
   rpc AddConcert(AddConcertRequest) returns (ConcertResponse);
   rpc UpdateConcert(UpdateConcertRequest) returns (ConcertResponse);
@@ -13,7 +17,6 @@ service ConcertService {
   rpc UpdateTicketPrice(UpdateTicketPriceRequest) returns (ConcertResponse);
 
   // Customer APIs
-  rpc ListConcerts(Empty) returns (ListConcertsResponse);
   rpc ReserveTickets(ReserveTicketsRequest) returns (ReservationResponse);
 
   // Coordinator APIs
@@ -48,6 +51,7 @@ message AddTicketStockRequest {
   string tier = 2;
   int32 count = 3;
   bool after_party = 4;
+  double price = 5; // Optional: set price for the tier if provided
 }
 
 message UpdateTicketPriceRequest {
